@@ -7,18 +7,6 @@ const geistMono = Geist_Mono({ subsets: ["latin"] })
 export const metadata = {
   title: "MediCare - Healthcare Management Platform",
   description: "Connect with doctors, manage your health records, and receive personalized medical analysis",
-  icons: {
-    icon: [
-      {
-        url: "/icon-light-32x32.png",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icon-dark-32x32.png",
-        media: "(prefers-color-scheme: dark)",
-      },
-    ],
-  },
 }
 
 export default function RootLayout({ children }) {

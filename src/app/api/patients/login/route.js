@@ -5,6 +5,7 @@ import { cookies } from "next/headers"
 
 export async function POST(request) {
   try {
+    console.log("[LOGIN] Attempting login...")
     const db = await getDB()
     const { email, password } = await request.json()
 
@@ -15,7 +16,9 @@ export async function POST(request) {
       )
     }
 
-    const patient = await PatientAPI.verifyPatient(email, password, db)
+    console.log("[LOGIN] Verifying patient:", email)
+    const patient = await PatientAPI.verifyPatient(email, password)
+    console.log("[LOGIN] Patient verification result:", patient ? "Found" : "Not found")
 
     if (!patient) {
       return Response.json(
@@ -31,6 +34,8 @@ export async function POST(request) {
     const cookieStore = await cookies()
     cookieStore.set("patientToken", token, COOKIE_OPTIONS)
 
+    console.log("[LOGIN] Login successful for:", email)
+
     return Response.json({
       success: true,
       message: "Login successful",
@@ -43,8 +48,9 @@ export async function POST(request) {
     })
   } catch (error) {
     console.error("[LOGIN ERROR]:", error)
+    console.error("[LOGIN ERROR STACK]:", error.stack)
     return Response.json(
-      { success: false, error: error.message },
+      { success: false, error: error.message || "Internal server error" },
       { status: 500 }
     )
   }

@@ -7,45 +7,72 @@ const PatientAPI = {
      GET ALL PATIENTS
   ========================= */
   async getAllPatients() {
-    const db = await getDB()
-    return db.collection("patients").find().toArray()
+    try {
+      const db = await getDB()
+      return db.collection("patients").find().toArray()
+    } catch (error) {
+      console.error("[PatientAPI] Error getting all patients:", error)
+      throw error
+    }
   },
 
   /* =========================
      GET PATIENT BY ID
   ========================= */
   async getPatientById(patientId) {
-    const db = await getDB()
-    return db.collection("patients").findOne({ patientId })
+    try {
+      const db = await getDB()
+      return db.collection("patients").findOne({ patientId })
+    } catch (error) {
+      console.error("[PatientAPI] Error getting patient by ID:", error)
+      throw error
+    }
   },
 
   /* =========================
      GET PATIENT BY EMAIL
   ========================= */
   async getPatientByEmail(email) {
-    const db = await getDB()
-    return db.collection("patients").findOne({ email })
+    try {
+      const db = await getDB()
+      console.log("[PatientAPI] Looking for patient with email:", email)
+      const patient = await db.collection("patients").findOne({ email })
+      console.log("[PatientAPI] Patient found:", patient ? patient.patientId : "None")
+      return patient
+    } catch (error) {
+      console.error("[PatientAPI] Error getting patient by email:", error)
+      throw error
+    }
   },
 
   /* =========================
      CREATE PATIENT (HASH PASSWORD)
   ========================= */
   async createPatient(data) {
-    const db = await getDB()
+    try {
+      const db = await getDB()
 
-    const hashedPassword = await bcrypt.hash(data.password, 10)
+      console.log("[PatientAPI] Hashing password for:", data.email)
+      const hashedPassword = await bcrypt.hash(data.password, 10)
+      console.log("[PatientAPI] Password hashed successfully")
 
-    const patient = {
-      ...data,
-      password: hashedPassword,
-      createdAt: new Date(),
+      const patient = {
+        ...data,
+        password: hashedPassword,
+        createdAt: new Date(),
+      }
+
+      console.log("[PatientAPI] Inserting patient into database:", data.patientId)
+      await db.collection("patients").insertOne(patient)
+      console.log("[PatientAPI] Patient inserted successfully")
+
+      // password remove before returning
+      delete patient.password
+      return patient
+    } catch (error) {
+      console.error("[PatientAPI] Error creating patient:", error)
+      throw error
     }
-
-    await db.collection("patients").insertOne(patient)
-
-    // password remove before returning
-    delete patient.password
-    return patient
   },
 
   /* =========================

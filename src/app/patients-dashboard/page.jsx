@@ -800,6 +800,16 @@ function PatientDashboardContent() {
       </div>
     )
   }
+const uniqueReports = Object.values(
+  reports.reduce((acc, r) => {
+    acc[r.reportId] = r
+    return acc
+  }, {})
+)
+
+const analyzedReports = uniqueReports.filter(
+  r => r.status === "analyzed"
+)
 
   return (
     <div className="min-h-screen flex bg-slate-50/50">
@@ -1010,6 +1020,7 @@ function PatientDashboardContent() {
                         <th className="p-6 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                       </tr>
                     </thead>
+                    
                     <tbody className="divide-y divide-slate-100">
                       {reports.filter(r => r.status === "analyzed").length === 0 ? (
                         <tr>
