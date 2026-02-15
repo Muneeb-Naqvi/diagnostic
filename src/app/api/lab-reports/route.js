@@ -1,6 +1,14 @@
 import getDB from "@/config/database"
 import LabReportAPI from "@/lib/labReportAPI"
 import { NextResponse } from "next/server"
+import { v2 as cloudinary } from "cloudinary"
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 /* =========================
    GET LAB REPORTS
@@ -75,41 +83,17 @@ export async function POST(req) {
     const buffer = Buffer.from(bytes)
     const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
 
-    // Upload to Cloudinary using direct API call
-    const timestamp = Math.round(new Date().getTime() / 1000)
-    const apiSecret = process.env.CLOUDINARY_API_SECRET
-    
-    // Create signature
-    const crypto = require('crypto')
-    const signature = crypto
-      .createHash('sha1')
-      .update(`public_id=lab-reports/${fileName}&timestamp=${timestamp}${apiSecret}`)
-      .digest('hex')
-    
-    // Prepare form data for Cloudinary
-    const cloudinaryFormData = new FormData()
-    cloudinaryFormData.append('file', new Blob([buffer]), file.name)
-    cloudinaryFormData.append('public_id', `lab-reports/${fileName}`)
-    cloudinaryFormData.append('timestamp', timestamp.toString())
-    cloudinaryFormData.append('api_key', process.env.CLOUDINARY_API_KEY)
-    cloudinaryFormData.append('signature', signature)
-    
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME
-    const uploadResponse = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
-      {
-        method: 'POST',
-        body: cloudinaryFormData,
-      }
-    )
-    
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text()
-      console.error("[Cloudinary Error]", errorText)
-      throw new Error("Cloudinary upload failed: " + errorText)
-    }
-    
-    const uploadResult = await uploadResponse.json()
+    // Convert buffer to base64
+    const base64 = buffer.toString("base64")
+    const dataUri = `data:${file.type};base64,${base64}`
+
+    // Upload to Cloudinary using SDK
+    const uploadResult = await cloudinary.uploader.upload(dataUri, {
+      public_id: `lab-reports/${fileName}`,
+      resource_type: "auto",
+      folder: "lab-reports",
+    })
+
     const fileUrl = uploadResult.secure_url
     const fileType = file.type || "application/octet-stream"
 
