@@ -1,8 +1,14 @@
 import getDB from "@/config/database"
 import LabReportAPI from "@/lib/labReportAPI"
 import { NextResponse } from "next/server"
-import fs from "fs/promises"
-import path from "path"
+import { v2 as cloudinary } from "cloudinary"
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
 
 /* =========================
    GET LAB REPORTS
@@ -72,19 +78,31 @@ export async function POST(req) {
       )
     }
 
-    /* 📁 Save file locally */
+    /* 📁 Upload file to Cloudinary */
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
-
     const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "-")}`
-    const uploadDir = path.join(process.cwd(), "public/uploads")
 
-    await fs.mkdir(uploadDir, { recursive: true })
+    // Convert buffer to base64 for Cloudinary
+    const base64 = buffer.toString("base64")
+    const dataUri = `data:${file.type};base64,${base64}`
 
-    const filePath = path.join(uploadDir, fileName)
-    await fs.writeFile(filePath, buffer)
+    // Upload to Cloudinary
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload(
+        dataUri,
+        {
+          public_id: `lab-reports/${fileName}`,
+          resource_type: "auto",
+        },
+        (error, result) => {
+          if (error) reject(error)
+          else resolve(result)
+        }
+      )
+    })
 
-    const fileUrl = `/uploads/${fileName}`
+    const fileUrl = uploadResult.secure_url
     const fileType = file.type || "application/octet-stream"
 
     /* 💾 Save DB record */
